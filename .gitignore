@@ -156,3 +156,8 @@ data/
 logs/
 !BundleTrack/XMem/inference/data
 run_used.yml
+
+debug_demo_box_yjj
+output
+test.png
+linemod

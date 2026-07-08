@@ -350,12 +350,20 @@ class BopBaseReader:
 
 
   def load_symmetry_tfs(self):
-    dir = os.path.dirname(self.get_gt_mesh_file(self.ob_ids[0]))
-    info_file = f'{dir}/models_info.json'
-    with open(info_file,'r') as ff:
-      info = json.load(ff)
     self.symmetry_tfs = {}
     self.symmetry_info_table = {}
+    try:
+      dir = os.path.dirname(self.get_gt_mesh_file(self.ob_ids[0]))
+      info_file = f'{dir}/models_info.json'
+      with open(info_file,'r') as ff:
+        info = json.load(ff)
+    except Exception as e:
+      logging.info(f"Could not load symmetry info; using identity transforms. Error: {e}")
+      for ob_id in self.ob_ids:
+        self.symmetry_info_table[ob_id] = {}
+        self.symmetry_tfs[ob_id] = np.eye(4, dtype=float)[None]
+      self.geometry_symmetry_info_table = copy.deepcopy(self.symmetry_info_table)
+      return
     for ob_id in self.ob_ids:
       self.symmetry_info_table[ob_id] = info[str(ob_id)]
       self.symmetry_tfs[ob_id] = symmetry_tfs_from_info(info[str(ob_id)], rot_angle_discrete=5)
@@ -420,6 +428,8 @@ class LinemodReader(LinemodOcclusionReader):
       if os.path.exists(f'{root}/lm_models'):
         mesh_dir = f'{root}/lm_models/models/obj_{ob_id:06d}.ply'
         break
+      if root == os.path.dirname(root):
+        raise FileNotFoundError(f"Could not find lm_models above {self.base_dir}")
       else:
         root = os.path.abspath(f'{root}/../')
     return mesh_dir
@@ -609,5 +619,4 @@ class TudlReader(BopBaseReader):
   def get_gt_mesh_file(self, ob_id):
     mesh_file = f'{self.base_dir}/../../../tudl_models/models/obj_{ob_id:06d}.ply'
     return mesh_file
-
 

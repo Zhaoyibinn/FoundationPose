@@ -15,7 +15,7 @@ from bundlesdf.tool import *
 import yaml,argparse
 
 
-def run_neural_object_field(cfg, K, rgbs, depths, masks, cam_in_obs, debug=0, save_dir='/home/bowen/debug/foundationpose_bundlesdf'):
+def run_neural_object_field(cfg, K, rgbs, depths, masks, cam_in_obs, debug=0, save_dir='/home/bowen/debug/foundationpose_bundlesdf', texture_mesh=True):
   rgbs = np.asarray(rgbs)
   depths = np.asarray(depths)
   masks = np.asarray(masks)
@@ -40,13 +40,14 @@ def run_neural_object_field(cfg, K, rgbs, depths, masks, cam_in_obs, debug=0, sa
   nerf.train()
 
   mesh = nerf.extract_mesh(isolevel=0,voxel_size=cfg['mesh_resolution'])
-  mesh = nerf.mesh_texture_from_train_images(mesh, rgbs_raw=rgbs, tex_res=1028)
+  if texture_mesh:
+    mesh = nerf.mesh_texture_from_train_images(mesh, rgbs_raw=rgbs, tex_res=1028)
   optimized_cvcam_in_obs,offset = get_optimized_poses_in_real_world(poses,nerf.models['pose_array'],cfg['sc_factor'],cfg['translation'])
   mesh = mesh_to_real_world(mesh, pose_offset=offset, translation=nerf.cfg['translation'], sc_factor=nerf.cfg['sc_factor'])
   return mesh
 
 
-def run_one_ob(base_dir, cfg, use_refined_mask=False):
+def run_one_ob(base_dir, cfg, use_refined_mask=False, texture_mesh=True):
   save_dir = f'{base_dir}/nerf'
   os.system(f'rm -rf {save_dir} && mkdir -p {save_dir}')
   with open(f'{base_dir}/select_frames.yml','r') as ff:
@@ -70,7 +71,7 @@ def run_one_ob(base_dir, cfg, use_refined_mask=False):
     masks.append(mask)
     cam_in_obs.append(cam_in_ob)
 
-  mesh = run_neural_object_field(cfg, K, rgbs, depths, masks, cam_in_obs, save_dir=save_dir, debug=0)
+  mesh = run_neural_object_field(cfg, K, rgbs, depths, masks, cam_in_obs, save_dir=save_dir, debug=0, texture_mesh=texture_mesh)
   return mesh
 
 

@@ -29,6 +29,17 @@ from nerf_helpers import *
 from Utils import *
 
 
+def remove_duplicate_faces_compat(mesh):
+  if hasattr(mesh, "remove_duplicate_faces"):
+    mesh.remove_duplicate_faces()
+    return mesh
+  if hasattr(mesh, "unique_faces") and hasattr(mesh, "update_faces"):
+    mesh.update_faces(mesh.unique_faces())
+    mesh.remove_unreferenced_vertices()
+    return mesh
+  return mesh
+
+
 def batchify(fn, chunk):
   """Constructs a version of 'fn' that applies to smaller batches.
   """
@@ -1135,7 +1146,7 @@ class NerfRunner:
     tex_image = torch.zeros((tex_res,tex_res,3)).cuda().float()
     weight_tex_image = torch.zeros(tex_image.shape[:-1]).cuda().float()
     mesh.merge_vertices()
-    mesh.remove_duplicate_faces()
+    mesh = remove_duplicate_faces_compat(mesh)
     mesh = mesh.unwrap()
     H,W = tex_image.shape[:2]
     uvs_tex = (mesh.visual.uv*np.array([W-1,H-1]).reshape(1,2))    #(n_V,2)
